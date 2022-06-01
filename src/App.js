@@ -1,19 +1,37 @@
-import "./App.css";
-import React, { useState, useRef, useEffect, useMemo } from "react";
-import DiaryEditor from "./DiaryEditor";
-import DiaryList from "./DiaryList";
-import OpTest from "./OpTest";
+import './App.css';
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+  useReducer,
+} from 'react';
+import DiaryEditor from './DiaryEditor';
+import DiaryList from './DiaryList';
 
 // https://jsonplaceholder.typicode.com/comments
 
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'INIT':
+    case 'CREATE':
+    case 'REMOVE':
+    case 'EDIT':
+    default:
+      return state;
+  }
+};
+
 function App() {
-  const [data, setData] = useState([]);
+  // const [data, setData] = useState([]);
+
+  const [data, dispatch] = useReducer(reducer, []);
 
   const dataId = useRef(0);
 
   const getData = async () => {
     const res = await fetch(
-      "https://jsonplaceholder.typicode.com/comments",
+      'https://jsonplaceholder.typicode.com/comments',
     ).then((res) => res.json());
 
     const initData = res.slice(0, 20).map((item) => {
@@ -33,7 +51,7 @@ function App() {
     getData();
   }, []);
 
-  const onCreate = (author, content, emotion) => {
+  const onCreate = useCallback((author, content, emotion) => {
     const created_date = new Date().getTime();
     const newItem = {
       author,
@@ -43,21 +61,20 @@ function App() {
       id: dataId.current,
     };
     dataId.current += 1;
-    setData([newItem, ...data]);
-  };
+    setData((data) => [newItem, ...data]);
+  }, []);
 
-  const onRemove = (targetId) => {
-    const newDiaryList = data.filter((item) => item.id !== targetId);
-    setData(newDiaryList);
-  };
+  const onRemove = useCallback((targetId) => {
+    setData((data) => data.filter((item) => item.id !== targetId));
+  }, []);
 
-  const onEdit = (targetId, newContent) => {
-    setData(
+  const onEdit = useCallback((targetId, newContent) => {
+    setData((data) =>
       data.map((item) =>
         item.id === targetId ? { ...item, content: newContent } : item,
       ),
     );
-  };
+  }, []);
 
   const getDiaryAnalysis = useMemo(() => {
     const goodCount = data.filter((item) => item.emotion >= 3).length;
@@ -70,7 +87,6 @@ function App() {
 
   return (
     <div className="App">
-      <OpTest />
       <DiaryEditor onCreate={onCreate} />
       <div>전체 일기 : {data.length}</div>
       <div>기분 좋은 일기 개수 : {goodCount}</div>
